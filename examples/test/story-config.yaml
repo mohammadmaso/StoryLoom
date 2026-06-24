@@ -1,0 +1,25 @@
+story:
+  title: test
+  author: test
+  genre: test
+  output_language: en
+ai:
+  provider: null
+  model: null
+  write_mode: suggest
+git:
+  enabled: true
+  auto_commit: true
+  commit_prefix: AI
+memory:
+  wikilink_folders:
+    - characters
+    - locations
+    - items
+    - world
+    - chapters
+canon:
+  default_status: draft
+  warn_on_generate: true
+i18n:
+  cli_locale: en
