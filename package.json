@@ -1,0 +1,21 @@
+{
+  "name": "storyloom",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI story writing copilot — CLI-first, local-first, markdown knowledge base",
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @storyloom/cli dev",
+    "story": "pnpm --filter @storyloom/cli start",
+    "api:dev": "pnpm --filter @storyloom/desktop-api dev",
+    "api:build": "pnpm --filter @storyloom/desktop-api build",
+    "desktop:dev": "pnpm api:dev & pnpm --filter @storyloom/desktop tauri dev",
+    "desktop:build": "pnpm build && pnpm --filter @storyloom/desktop tauri build",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

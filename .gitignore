@@ -1,0 +1,8 @@
+node_modules/
+dist/
+target/
+*.tsbuildinfo
+.env
+.storyloom/
+.DS_Store
+coverage/
