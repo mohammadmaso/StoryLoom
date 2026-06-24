@@ -1,0 +1,98 @@
+{
+  "app": {
+    "name": "StoryLoom",
+    "tagline": "مساعد كتابة القصص بالذكاء الاصطناعي"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "explorer": "المستكشف",
+    "graph": "رسم القصة",
+    "search": "بحث",
+    "ai": "مساعد الذكاء الاصطناعي",
+    "settings": "الإعدادات",
+    "git": "سجل Git"
+  },
+  "home": {
+    "welcome": "مرحباً بك في StoryLoom",
+    "subtitle": "افتح مشروع قصة موجود أو أنشئ مشروعاً جديداً.",
+    "openProject": "فتح مجلد المشروع",
+    "createProject": "إنشاء مشروع جديد",
+    "projectName": "اسم مجلد المشروع",
+    "title": "عنوان القصة",
+    "author": "المؤلف",
+    "genre": "النوع",
+    "parentDir": "المجلد الأب",
+    "recent": "المشروع الحالي",
+    "noProject": "لا يوجد مشروع مفتوح",
+    "apiOffline": "خادم API غير متصل. ابدأ بـ pnpm api:dev"
+  },
+  "explorer": {
+    "title": "المستكشف",
+    "save": "حفظ",
+    "saved": "تم الحفظ",
+    "promote": "ترقية إلى Canon",
+    "archive": "أرشفة",
+    "newCharacter": "شخصية جديدة",
+    "newLocation": "موقع جديد",
+    "newItem": "عنصر جديد",
+    "newChapter": "فصل جديد",
+    "namePrompt": "أدخل الاسم",
+    "status": "الحالة",
+    "type": "النوع"
+  },
+  "graph": {
+    "title": "رسم القصة",
+    "build": "إعادة بناء الرسم",
+    "nodes": "العُقد",
+    "edges": "الروابط",
+    "warnings": "تحذيرات",
+    "empty": "ابنِ الرسم لتصور روابط الويكي."
+  },
+  "search": {
+    "title": "بحث",
+    "placeholder": "البحث في ملفات markdown...",
+    "noResults": "لم يتم العثور على نتائج."
+  },
+  "ai": {
+    "title": "مساعد الذكاء الاصطناعي",
+    "interview": "المُقابِل",
+    "whatIf": "ماذا لو",
+    "plotHoles": "ثغرات الحبكة",
+    "style": "تحليل الأسلوب",
+    "generate": "توليد فصل",
+    "send": "إرسال",
+    "batchQuestions": "أسئلة دفعة",
+    "chapterRef": "مرجع الفصل",
+    "yourMessage": "رسالتك",
+    "response": "الاستجابة",
+    "run": "تشغيل",
+    "includeAi": "تضمين تحليل الذكاء الاصطناعي",
+    "writeMode": "وضع الكتابة",
+    "outline": "مخطط فقط",
+    "force": "فرض رغم ثغرات الحبكة",
+    "notConfigured": "قم بتكوين مزود الذكاء الاصطناعي في الإعدادات أولاً."
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "لغة الواجهة",
+    "aiProvider": "مزود الذكاء الاصطناعي",
+    "aiModel": "نموذج الذكاء الاصطناعي",
+    "writeMode": "وضع الكتابة الافتراضي",
+    "outputLanguage": "لغة إخراج القصة",
+    "save": "حفظ الإعدادات",
+    "saved": "تم حفظ الإعدادات"
+  },
+  "git": {
+    "title": "سجل Git للذكاء الاصطناعي",
+    "empty": "لم يتم العثور على commits."
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "close": "إغلاق",
+    "refresh": "تحديث",
+    "canon": "Canon",
+    "draft": "مسودة",
+    "archived": "مؤرشف"
+  }
+}

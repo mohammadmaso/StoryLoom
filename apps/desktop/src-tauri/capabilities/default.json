@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "default",
+  "description": "StoryLoom main window — local build + Vite dev server",
+  "windows": ["main"],
+  "webviews": ["main"],
+  "local": true,
+  "remote": {
+    "urls": [
+      "http://localhost:1420",
+      "http://127.0.0.1:1420",
+      "http://localhost:*"
+    ]
+  },
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "shell:default"
+  ]
+}

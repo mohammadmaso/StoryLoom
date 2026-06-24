@@ -1,0 +1,98 @@
+{
+  "app": {
+    "name": "StoryLoom",
+    "tagline": "AI story writing copilot"
+  },
+  "nav": {
+    "home": "Home",
+    "explorer": "Explorer",
+    "graph": "Story Graph",
+    "search": "Search",
+    "ai": "AI Copilot",
+    "settings": "Settings",
+    "git": "Git History"
+  },
+  "home": {
+    "welcome": "Welcome to StoryLoom",
+    "subtitle": "Open an existing story project or create a new one.",
+    "openProject": "Open Project Folder",
+    "createProject": "Create New Project",
+    "projectName": "Project folder name",
+    "title": "Story title",
+    "author": "Author",
+    "genre": "Genre",
+    "parentDir": "Parent directory",
+    "recent": "Current project",
+    "noProject": "No project open",
+    "apiOffline": "API server offline. Start with: pnpm api:dev"
+  },
+  "explorer": {
+    "title": "Explorer",
+    "save": "Save",
+    "saved": "Saved",
+    "promote": "Promote to Canon",
+    "archive": "Archive",
+    "newCharacter": "New Character",
+    "newLocation": "New Location",
+    "newItem": "New Item",
+    "newChapter": "New Chapter",
+    "namePrompt": "Enter name",
+    "status": "Status",
+    "type": "Type"
+  },
+  "graph": {
+    "title": "Story Graph",
+    "build": "Rebuild Graph",
+    "nodes": "Nodes",
+    "edges": "Edges",
+    "warnings": "Warnings",
+    "empty": "Build the graph to visualize wikilink connections."
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search markdown files...",
+    "noResults": "No results found."
+  },
+  "ai": {
+    "title": "AI Copilot",
+    "interview": "Interviewer",
+    "whatIf": "What-If",
+    "plotHoles": "Plot Holes",
+    "style": "Style Analysis",
+    "generate": "Generate Chapter",
+    "send": "Send",
+    "batchQuestions": "Batch Questions",
+    "chapterRef": "Chapter reference",
+    "yourMessage": "Your message",
+    "response": "Response",
+    "run": "Run",
+    "includeAi": "Include AI analysis",
+    "writeMode": "Write mode",
+    "outline": "Outline only",
+    "force": "Force despite plot holes",
+    "notConfigured": "Configure AI provider in Settings first."
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "UI Language",
+    "aiProvider": "AI Provider",
+    "aiModel": "AI Model",
+    "writeMode": "Default Write Mode",
+    "outputLanguage": "Story Output Language",
+    "save": "Save Settings",
+    "saved": "Settings saved"
+  },
+  "git": {
+    "title": "AI Git History",
+    "empty": "No AI commits found."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "close": "Close",
+    "refresh": "Refresh",
+    "canon": "Canon",
+    "draft": "Draft",
+    "archived": "Archived"
+  }
+}

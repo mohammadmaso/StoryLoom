@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-stone-800 bg-stone-900/80 backdrop-blur;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition bg-amber-700 text-white hover:bg-amber-600;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition border border-stone-700 bg-stone-800 text-stone-100 hover:bg-stone-700;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition text-stone-300 hover:bg-stone-800 hover:text-white;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-stone-700 bg-stone-950 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white;
+  }
+
+  .nav-link-active {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm bg-amber-950/60 text-amber-200 ring-1 ring-amber-800/50;
+  }
+}
