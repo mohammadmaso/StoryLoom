@@ -1,4 +1,5 @@
 import { marked } from "marked";
+import { applyAutoDirection } from "@/lib/wysiwygHtml";
 
 marked.setOptions({ gfm: true, breaks: true });
 
@@ -21,6 +22,7 @@ function wikilinksToHtml(markdown: string): string {
 }
 
 export function markdownToHtml(markdown: string): string {
-  if (!markdown.trim()) return "<p></p>";
-  return marked.parse(wikilinksToHtml(markdown), { async: false }) as string;
+  if (!markdown.trim()) return '<p dir="auto"></p>';
+  const html = marked.parse(wikilinksToHtml(markdown), { async: false }) as string;
+  return applyAutoDirection(html);
 }

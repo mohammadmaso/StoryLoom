@@ -71,7 +71,18 @@
     "deleteFileConfirm": "Confirm delete",
     "deleteFileCancel": "Cancel",
     "deleteFileSuccess": "File deleted.",
-    "wikilinkNotFound": "No file found for [[{{target}}]]"
+    "wikilinkNotFound": "No file found for [[{{target}}]]",
+    "saving": "Saving…",
+    "linkWikilink": "Wikilink",
+    "linkUrl": "URL link",
+    "linkTarget": "Link target",
+    "linkTargetPlaceholder": "Character or chapter name",
+    "linkUrlField": "URL",
+    "linkUrlPlaceholder": "https://example.com",
+    "linkLabel": "Display text",
+    "linkLabelPlaceholder": "Text shown in the editor",
+    "linkInsert": "Insert link",
+    "paragraphDirection": "Paragraph direction ({{dir}}) — click to cycle auto / RTL / LTR"
   },
   "graph": {
     "title": "Story Graph",

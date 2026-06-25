@@ -243,6 +243,23 @@ html.light {
 
   .story-wysiwyg p {
     @apply mb-3;
+    unicode-bidi: plaintext;
+  }
+
+  .story-wysiwyg h1,
+  .story-wysiwyg h2,
+  .story-wysiwyg h3,
+  .story-wysiwyg li,
+  .story-wysiwyg blockquote {
+    unicode-bidi: plaintext;
+  }
+
+  .story-wysiwyg [dir="rtl"] {
+    text-align: right;
+  }
+
+  .story-wysiwyg [dir="ltr"] {
+    text-align: left;
   }
 
   .story-wysiwyg ul,

@@ -7,12 +7,22 @@ import {
   useState,
 } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
-import TurndownService from "turndown";
 import { markdownToHtml } from "@/lib/markdown";
+import { htmlToMarkdown, ensureBlockDirections } from "@/lib/wysiwygMarkdown";
+import {
+  createWikilinkElement,
+  cycleBlockDirection,
+  getBlockElement,
+  getSelectedText,
+  insertNodeAtSelection,
+} from "@/lib/wysiwygHtml";
+import { WysiwygLinkPopover, type LinkKind } from "@/components/WysiwygLinkPopover";
 import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import {
+  AlignRight,
   Bold,
+  ExternalLink,
   Eye,
   FileCode2,
   Heading1,
@@ -20,6 +30,7 @@ import {
   Heading3,
   Italic,
   LayoutTemplate,
+  Link2,
   List,
   ListOrdered,
   Minus,
@@ -30,40 +41,6 @@ import {
 export type EditorMode = "source" | "preview" | "wysiwyg";
 
 const EDITOR_MODE_KEY = "storyloom-editor-mode";
-
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  bulletListMarker: "-",
-  codeBlockStyle: "fenced",
-});
-
-turndown.addRule("wikilinkSpan", {
-  filter: (node) =>
-    node.nodeName === "SPAN" && node.hasAttribute("data-wikilink"),
-  replacement: (_content, node) => {
-    const el = node as HTMLSpanElement;
-    const target = el.getAttribute("data-wikilink") ?? "";
-    const label = el.textContent ?? "";
-    return target && target !== label ? `[[${target}|${label}]]` : `[[${label}]]`;
-  },
-});
-
-turndown.addRule("wikilink", {
-  filter: (node) =>
-    node.nodeName === "A" &&
-    node.getAttribute("href")?.startsWith("wikilink:") === true,
-  replacement: (_content, node) => {
-    const el = node as HTMLAnchorElement;
-    const label = el.textContent ?? "";
-    const href = el.getAttribute("href") ?? "";
-    const target = href.slice("wikilink:".length);
-    return target && target !== label ? `[[${target}|${label}]]` : `[[${label}]]`;
-  },
-});
-
-function htmlToMarkdown(html: string): string {
-  return turndown.turndown(html).replace(/\n{3,}/g, "\n\n").trimEnd();
-}
 
 function loadEditorMode(): EditorMode {
   const saved = localStorage.getItem(EDITOR_MODE_KEY);
@@ -83,25 +60,37 @@ interface StoryEditorProps {
   onWikilinkClick?: (target: string) => void;
 }
 
+function syncWysiwygContent(root: HTMLDivElement, onChange: (value: string) => void): void {
+  ensureBlockDirections(root);
+  onChange(htmlToMarkdown(root.innerHTML));
+}
+
 // Toolbar button that prevents contentEditable from losing focus on mousedown
 function WysiwygToolbarBtn({
   icon: Icon,
   title,
   action,
+  active = false,
 }: {
   icon: typeof Bold;
   title: string;
   action: () => void;
+  active?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       onMouseDown={(e) => {
-        e.preventDefault(); // keep focus in contentEditable
+        e.preventDefault();
         action();
       }}
-      className="rounded p-1 text-stone-400 hover:bg-stone-700 hover:text-stone-200"
+      className={clsx(
+        "rounded p-1 transition",
+        active
+          ? "bg-amber-950/60 text-amber-200"
+          : "text-stone-400 hover:bg-stone-700 hover:text-stone-200",
+      )}
     >
       <Icon className="h-3.5 w-3.5" />
     </button>
@@ -119,14 +108,15 @@ export function StoryEditor({
   const { t } = useTranslation();
   const [mode, setMode] = useState<EditorMode>(loadEditorMode);
   const [wysiwygHtml, setWysiwygHtml] = useState(() => markdownToHtml(value));
+  const [linkPopover, setLinkPopover] = useState<LinkKind | null>(null);
+  const [blockDirHint, setBlockDirHint] = useState<"auto" | "rtl" | "ltr">("auto");
   const editableRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<MonacoEditorInstance | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const isRtl = direction === "rtl";
 
   const previewHtml = useMemo(() => markdownToHtml(value), [value]);
 
-  // When the file changes, push the new content into Monaco explicitly.
-  // This avoids remounting the entire editor (which causes blank flicker).
   useEffect(() => {
     const ed = monacoEditorRef.current;
     if (!ed) return;
@@ -137,16 +127,18 @@ export function StoryEditor({
     }
     requestAnimationFrame(() => ed.layout());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileKey]); // intentionally only react to file-key changes, not keystrokes
+  }, [fileKey]);
 
   useEffect(() => {
     setWysiwygHtml(markdownToHtml(value));
+    setLinkPopover(null);
   }, [fileKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     if (mode !== "wysiwyg" || !editableRef.current) return;
     if (editableRef.current.innerHTML !== wysiwygHtml) {
       editableRef.current.innerHTML = wysiwygHtml;
+      ensureBlockDirections(editableRef.current);
     }
   }, [mode, wysiwygHtml, fileKey]);
 
@@ -155,13 +147,14 @@ export function StoryEditor({
       if (next === mode) return;
 
       if (mode === "wysiwyg" && editableRef.current) {
-        onChange(htmlToMarkdown(editableRef.current.innerHTML));
+        syncWysiwygContent(editableRef.current, onChange);
       }
 
       if (next === "wysiwyg") {
         setWysiwygHtml(markdownToHtml(value));
       }
 
+      setLinkPopover(null);
       localStorage.setItem(EDITOR_MODE_KEY, next);
       setMode(next);
     },
@@ -170,20 +163,59 @@ export function StoryEditor({
 
   const handleWysiwygInput = useCallback(() => {
     if (!editableRef.current) return;
-    onChange(htmlToMarkdown(editableRef.current.innerHTML));
+    syncWysiwygContent(editableRef.current, onChange);
   }, [onChange]);
 
-  // Run an execCommand on the contentEditable while keeping focus
   const wysiwygCmd = useCallback(
     (command: string, arg?: string) => {
       editableRef.current?.focus();
       document.execCommand(command, false, arg);
       if (editableRef.current) {
-        onChange(htmlToMarkdown(editableRef.current.innerHTML));
+        syncWysiwygContent(editableRef.current, onChange);
       }
     },
     [onChange],
   );
+
+  const openLinkPopover = useCallback((kind: LinkKind) => {
+    setLinkPopover((current) => (current === kind ? null : kind));
+  }, []);
+
+  const insertLink = useCallback(
+    (target: string, label: string) => {
+      if (!editableRef.current) return;
+      editableRef.current.focus();
+
+      if (linkPopover === "wikilink") {
+        insertNodeAtSelection(createWikilinkElement(target, label));
+      } else {
+        const anchor = document.createElement("a");
+        anchor.href = target;
+        anchor.textContent = label;
+        insertNodeAtSelection(anchor);
+      }
+
+      syncWysiwygContent(editableRef.current, onChange);
+      setLinkPopover(null);
+    },
+    [linkPopover, onChange],
+  );
+
+  const toggleParagraphDirection = useCallback(() => {
+    if (!editableRef.current) return;
+    editableRef.current.focus();
+    const block = getBlockElement(editableRef.current);
+    if (!block) return;
+    const next = cycleBlockDirection(block);
+    setBlockDirHint(next);
+    syncWysiwygContent(editableRef.current, onChange);
+  }, [onChange]);
+
+  const updateBlockDirHint = useCallback(() => {
+    if (!editableRef.current) return;
+    const block = getBlockElement(editableRef.current);
+    setBlockDirHint((block?.getAttribute("dir") as "auto" | "rtl" | "ltr") ?? "auto");
+  }, []);
 
   const handleWikilinkClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
@@ -262,10 +294,14 @@ export function StoryEditor({
     );
   };
 
+  const selectedText = linkPopover ? getSelectedText() : "";
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Top bar: mode tabs + WYSIWYG toolbar */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-stone-800 px-3 py-1.5">
+      <div
+        ref={toolbarRef}
+        className="relative flex shrink-0 flex-wrap items-center gap-1 border-b border-stone-800 px-3 py-1.5"
+      >
         {modeButton("source", FileCode2, t("explorer.modeSource"))}
         {modeButton("preview", LayoutTemplate, t("explorer.modePreview"))}
         {modeButton("wysiwyg", Eye, t("explorer.modeWysiwyg"))}
@@ -285,7 +321,35 @@ export function StoryEditor({
             <WysiwygToolbarBtn icon={ListOrdered} title="Numbered list" action={() => wysiwygCmd("insertOrderedList")} />
             <WysiwygToolbarBtn icon={Quote} title="Blockquote" action={() => wysiwygCmd("formatBlock", "blockquote")} />
             <WysiwygToolbarBtn icon={Minus} title="Horizontal rule" action={() => wysiwygCmd("insertHorizontalRule")} />
+            <div className="mx-1 h-4 w-px shrink-0 bg-stone-700" />
+            <WysiwygToolbarBtn
+              icon={Link2}
+              title={t("explorer.linkWikilink")}
+              action={() => openLinkPopover("wikilink")}
+              active={linkPopover === "wikilink"}
+            />
+            <WysiwygToolbarBtn
+              icon={ExternalLink}
+              title={t("explorer.linkUrl")}
+              action={() => openLinkPopover("url")}
+              active={linkPopover === "url"}
+            />
+            <WysiwygToolbarBtn
+              icon={AlignRight}
+              title={t("explorer.paragraphDirection", { dir: blockDirHint.toUpperCase() })}
+              action={toggleParagraphDirection}
+            />
           </>
+        )}
+
+        {linkPopover && (
+          <WysiwygLinkPopover
+            kind={linkPopover}
+            initialTarget={selectedText}
+            initialLabel={selectedText}
+            onInsert={insertLink}
+            onClose={() => setLinkPopover(null)}
+          />
         )}
       </div>
 
@@ -338,6 +402,8 @@ export function StoryEditor({
             onClick={handleWikilinkClick}
             onInput={handleWysiwygInput}
             onBlur={handleWysiwygInput}
+            onKeyUp={updateBlockDirHint}
+            onMouseUp={updateBlockDirHint}
             spellCheck
           />
         )}

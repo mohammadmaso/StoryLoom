@@ -71,7 +71,18 @@
     "deleteFileConfirm": "تأكيد الحذف",
     "deleteFileCancel": "إلغاء",
     "deleteFileSuccess": "تم حذف الملف.",
-    "wikilinkNotFound": "لم يتم العثور على ملف لـ [[{{target}}]]"
+    "wikilinkNotFound": "لم يتم العثور على ملف لـ [[{{target}}]]",
+    "saving": "جارٍ الحفظ…",
+    "linkWikilink": "رابط ويكي",
+    "linkUrl": "رابط URL",
+    "linkTarget": "هدف الرابط",
+    "linkTargetPlaceholder": "اسم الشخصية أو الفصل",
+    "linkUrlField": "الرابط",
+    "linkUrlPlaceholder": "https://example.com",
+    "linkLabel": "النص المعروض",
+    "linkLabelPlaceholder": "النص الظاهر في المحرر",
+    "linkInsert": "إدراج الرابط",
+    "paragraphDirection": "اتجاه الفقرة ({{dir}}) — انقر للتبديل auto / RTL / LTR"
   },
   "graph": {
     "title": "رسم القصة",

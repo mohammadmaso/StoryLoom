@@ -71,7 +71,18 @@
     "deleteFileConfirm": "تأیید حذف",
     "deleteFileCancel": "لغو",
     "deleteFileSuccess": "فایل حذف شد.",
-    "wikilinkNotFound": "فایلی برای [[{{target}}]] یافت نشد"
+    "wikilinkNotFound": "فایلی برای [[{{target}}]] یافت نشد",
+    "saving": "در حال ذخیره…",
+    "linkWikilink": "پیوند ویکی",
+    "linkUrl": "پیوند وب",
+    "linkTarget": "هدف پیوند",
+    "linkTargetPlaceholder": "نام شخصیت یا فصل",
+    "linkUrlField": "نشانی",
+    "linkUrlPlaceholder": "https://example.com",
+    "linkLabel": "متن نمایشی",
+    "linkLabelPlaceholder": "متنی که در ویرایشگر دیده می‌شود",
+    "linkInsert": "درج پیوند",
+    "paragraphDirection": "جهت پاراگراف ({{dir}}) — برای تغییر auto / RTL / LTR کلیک کنید"
   },
   "graph": {
     "title": "گراف داستان",

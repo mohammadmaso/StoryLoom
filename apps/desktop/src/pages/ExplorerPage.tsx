@@ -27,6 +27,9 @@ export function ExplorerPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const deleteConfirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedBodyRef = useRef("");
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveSeqRef = useRef(0);
 
   const textDirection = useMemo(
     () => storyTextDirection(project?.config),
@@ -52,11 +55,30 @@ export function ExplorerPage() {
 
   async function openFile(path: string) {
     setError("");
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    if (
+      selected &&
+      file &&
+      editorValue !== savedBodyRef.current &&
+      !selected.startsWith("reports/")
+    ) {
+      try {
+        await api.saveFile(selected, editorValue);
+        savedBodyRef.current = editorValue;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        return;
+      }
+    }
     try {
       const data = await api.getFile(path);
       setSelected(path);
       setFile(data);
       setEditorValue(data.body);
+      savedBodyRef.current = data.body;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSelected(null);
@@ -81,13 +103,41 @@ export function ExplorerPage() {
     }
   }
 
-  async function saveFile() {
-    if (!selected || !file) return;
-    setStatus(t("common.loading"));
-    await api.saveFile(selected, editorValue);
-    setStatus(t("explorer.saved"));
-    setTimeout(() => setStatus(""), 2000);
+  async function saveFile(showStatus = true) {
+    if (!selected || !file || isReportFile) return;
+    if (editorValue === savedBodyRef.current) return;
+
+    const seq = ++autosaveSeqRef.current;
+    if (showStatus) setStatus(t("explorer.saving"));
+
+    try {
+      await api.saveFile(selected, editorValue);
+      if (seq !== autosaveSeqRef.current) return;
+      savedBodyRef.current = editorValue;
+      if (showStatus) {
+        setStatus(t("explorer.saved"));
+        setTimeout(() => setStatus(""), 2000);
+      }
+    } catch (err) {
+      if (seq !== autosaveSeqRef.current) return;
+      setError(err instanceof Error ? err.message : String(err));
+      if (showStatus) setStatus("");
+    }
   }
+
+  useEffect(() => {
+    if (!selected || !file || isReportFile) return;
+    if (editorValue === savedBodyRef.current) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      void saveFile(true);
+    }, 800);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [editorValue, selected, file, isReportFile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openCreateModal(kind: CreateEntityKind) {
     setCreateError("");
@@ -268,7 +318,7 @@ export function ExplorerPage() {
                 <button type="button" className="btn-secondary" onClick={() => void archive()} disabled={!selected}>{t("explorer.archive")}</button>
               </>
             )}
-            <button type="button" className="btn-primary" onClick={() => void saveFile()} disabled={!selected}>{t("explorer.save")}</button>
+            <button type="button" className="btn-primary" onClick={() => void saveFile(true)} disabled={!selected || isReportFile}>{t("explorer.save")}</button>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
