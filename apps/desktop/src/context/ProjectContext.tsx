@@ -6,13 +6,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, type ProjectState } from "@/lib/api";
+import {
+  api,
+  LAST_PROJECT_KEY,
+  normalizeProjectState,
+  type ProjectState,
+} from "@/lib/api";
 
 interface ProjectContextValue {
   project: ProjectState | null;
   apiOnline: boolean;
   refresh: () => Promise<void>;
-  openProject: (path: string) => Promise<void>;
+  openProject: (path: string) => Promise<ProjectState>;
   closeProject: () => Promise<void>;
 }
 
@@ -27,7 +32,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       await api.health();
       setApiOnline(true);
       const state = await api.getProject();
-      setProject(state.open ? state : null);
+      setProject(normalizeProjectState(state));
     } catch {
       setApiOnline(false);
       setProject(null);
@@ -38,13 +43,35 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!apiOnline || project?.open) return;
+    const last = localStorage.getItem(LAST_PROJECT_KEY);
+    if (!last) return;
+    void api
+      .openProject(last)
+      .then((state) => {
+        const normalized = normalizeProjectState(state);
+        if (normalized) setProject(normalized);
+      })
+      .catch(() => {
+        localStorage.removeItem(LAST_PROJECT_KEY);
+      });
+  }, [apiOnline, project?.open]);
+
   const openProject = useCallback(async (path: string) => {
     const state = await api.openProject(path);
-    setProject(state);
+    const normalized = normalizeProjectState(state);
+    if (!normalized) {
+      throw new Error("Failed to open project");
+    }
+    localStorage.setItem(LAST_PROJECT_KEY, normalized.projectRoot!);
+    setProject(normalized);
+    return normalized;
   }, []);
 
   const closeProject = useCallback(async () => {
     await api.closeProject();
+    localStorage.removeItem(LAST_PROJECT_KEY);
     setProject(null);
   }, []);
 
@@ -61,4 +88,10 @@ export function useProject() {
   const ctx = useContext(ProjectContext);
   if (!ctx) throw new Error("useProject outside provider");
   return ctx;
+}
+
+export function isProjectOpen(
+  project: ProjectState | null,
+): project is ProjectState & { open: true; projectRoot: string } {
+  return Boolean(project?.open && project.projectRoot);
 }

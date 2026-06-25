@@ -5,9 +5,11 @@ import type { StoryConfig } from "@storyloom/shared";
 import {
   applyEnvToProcess,
   loadProjectEnv,
+  openAiCompatibleBaseUrl,
   type EnvConfig,
 } from "../config/env.js";
-import type { StyleProfile } from "@storyloom/shared";
+import type { StyleProfile, StorySuggestion } from "@storyloom/shared";
+import { STORY_SUGGESTIONS_PROMPT } from "../suggestions/parser.js";
 
 export interface AgentServices {
   config: StoryConfig;
@@ -30,13 +32,25 @@ function resolveLanguageModel(config: StoryConfig, env: EnvConfig) {
 
   switch (provider) {
     case "openai":
-      return createOpenAI({ apiKey: env.openaiApiKey })(modelName);
+      return createOpenAI({
+        apiKey: env.openaiApiKey,
+        ...(env.openaiBaseUrl?.trim()
+          ? { baseURL: openAiCompatibleBaseUrl(env.openaiBaseUrl) }
+          : {}),
+      })(modelName);
     case "anthropic":
-      return createAnthropic({ apiKey: env.anthropicApiKey })(modelName);
+      return createAnthropic({
+        apiKey: env.anthropicApiKey,
+        ...(env.anthropicBaseUrl?.trim()
+          ? { baseURL: env.anthropicBaseUrl.trim() }
+          : {}),
+      })(modelName);
     case "ollama":
       return createOpenAI({
-        baseURL: `${env.ollamaBaseUrl ?? "http://localhost:11434"}/v1`,
-        apiKey: "ollama",
+        baseURL: openAiCompatibleBaseUrl(
+          env.ollamaBaseUrl ?? "http://localhost:11434",
+        ),
+        apiKey: env.openaiApiKey?.trim() || "ollama",
       })(modelName);
   }
 }
@@ -77,7 +91,8 @@ export async function runInterviewerAgent(
     `You are an intelligent story writing co-pilot and interviewer for a novelist.
 Your job is to ask meaningful questions that help the author make decisions and uncover missing details.
 Challenge assumptions, clarify motivations, and help maintain narrative consistency.
-Write in ${services.config.story.output_language}. Be concise and specific.`,
+When you propose story details (character traits, plot beats, world facts), include them as selectable suggestions.
+Write in ${services.config.story.output_language}. Be concise and specific.${STORY_SUGGESTIONS_PROMPT}`,
     services,
   );
 
@@ -99,7 +114,8 @@ export async function runBatchInterviewerAgent(
     "interviewer-batch",
     `You are a story writing co-pilot. Generate 5-8 thoughtful interview questions for the author based on the story context.
 Format as markdown with numbered questions. Focus on consistency, motivation, and missing details.
-Write in ${services.config.story.output_language}.`,
+Include story suggestions for any concrete details you infer the author might adopt.
+Write in ${services.config.story.output_language}.${STORY_SUGGESTIONS_PROMPT}`,
     services,
   );
 
@@ -118,7 +134,8 @@ export async function runWhatIfAgent(
     "what-if",
     `You are a branching story assistant. Generate 3 distinct story continuation paths (Path A, B, C) based on the current story graph and unresolved threads.
 Each path should be plausible given existing relationships, motivations, and world state.
-Write in ${services.config.story.output_language}.`,
+Label each path clearly as "Path A", "Path B", "Path C" and include each as a separate chapter suggestion.
+Write in ${services.config.story.output_language}.${STORY_SUGGESTIONS_PROMPT}`,
     services,
   );
 
@@ -147,7 +164,7 @@ Severity: critical|warning|info
 Description: ...
 Suggestion: ...
 
-Write in ${services.config.story.output_language}.`,
+Write in ${services.config.story.output_language}.${STORY_SUGGESTIONS_PROMPT}`,
     services,
   );
 
@@ -172,7 +189,8 @@ export async function runChapterAgent(
 Match the author's voice when a style profile is provided.
 Maintain consistency with the story graph and canon material.
 Write in ${services.config.story.output_language}.
-Generate ${mode === "outline" ? "a detailed chapter outline" : "chapter prose"}.${styleNote}`,
+Generate ${mode === "outline" ? "a detailed chapter outline" : "chapter prose"}.
+Split major beats into separate suggestions when possible.${styleNote}${STORY_SUGGESTIONS_PROMPT}`,
     services,
   );
 
@@ -180,6 +198,46 @@ Generate ${mode === "outline" ? "a detailed chapter outline" : "chapter prose"}.
     `Chapter: ${chapterRef}\n\nStory context:\n${context}\n\nGenerate ${mode === "outline" ? "outline" : "prose"}.`,
   );
   return extractAgentText(response);
+}
+
+export async function runIntegrateSuggestionsAgent(
+  services: AgentServices,
+  relativePath: string,
+  currentBody: string,
+  suggestions: StorySuggestion[],
+): Promise<string> {
+  const agent = buildAgent(
+    "integrate-suggestions",
+    `You are a professional story editor helping a novelist update their markdown story files.
+Read the current file and the copilot suggestions, then rewrite the FULL file body so suggestions are woven in naturally.
+Rules:
+- Preserve the author's voice and existing [[wikilinks]]
+- Place each suggestion in the most appropriate section; create sections if needed
+- Do not duplicate content; merge overlapping ideas
+- Keep markdown headings coherent
+- Return ONLY the rewritten markdown body (no YAML frontmatter, no code fences, no commentary)
+Write in ${services.config.story.output_language}.`,
+    services,
+  );
+
+  const suggestionBlock = suggestions
+    .map(
+      (s, i) =>
+        `${i + 1}. ${s.title}${s.target.section ? ` (target: ${s.target.section})` : ""}\n${s.description ? `Why: ${s.description}\n` : ""}${s.content}`,
+    )
+    .join("\n\n---\n\n");
+
+  const response = await agent.generate(
+    `File: ${relativePath}\n\nCurrent content:\n${currentBody}\n\nSuggestions to integrate:\n${suggestionBlock}\n\nReturn the complete rewritten markdown body.`,
+  );
+
+  return stripCodeFences(extractAgentText(response)).trim();
+}
+
+function stripCodeFences(text: string): string {
+  const fenced = text.match(/^```(?:markdown|md)?\s*([\s\S]*?)```$/i);
+  if (fenced) return fenced[1]!.trim();
+  return text.replace(/^```(?:markdown|md)?\n?/i, "").replace(/\n?```$/i, "").trim();
 }
 
 function extractAgentText(response: unknown): string {

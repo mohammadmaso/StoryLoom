@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import matter from "gray-matter";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import {
@@ -89,20 +90,47 @@ export async function parseMarkdownFile(
 ): Promise<ParsedMarkdownFile> {
   const raw = await fs.readFile(filePath, "utf8");
   const parsed = matter(raw);
-  const frontmatter = FrontmatterSchema.parse(parsed.data);
+  const plain = !hasYamlFrontmatter(raw);
+  const frontmatter = plain
+    ? defaultFrontmatterForPlainFile(filePath)
+    : FrontmatterSchema.parse(parsed.data);
   return {
     frontmatter,
-    body: parsed.content.trim(),
+    body: plain ? raw.trimEnd() : parsed.content.trim(),
     filePath,
     relativePath: toRelative(projectRoot, filePath),
+    plain,
   };
+}
+
+function hasYamlFrontmatter(raw: string): boolean {
+  return raw.trimStart().startsWith("---");
+}
+
+function defaultFrontmatterForPlainFile(filePath: string): Frontmatter {
+  const base = path.basename(filePath, path.extname(filePath));
+  const today = new Date().toISOString().slice(0, 10);
+  return FrontmatterSchema.parse({
+    id: base,
+    type: "lore",
+    status: "draft",
+    created: today,
+    updated: today,
+    ai_generated: true,
+    aliases: [],
+  });
 }
 
 export async function writeMarkdownFile(
   filePath: string,
   frontmatter: Frontmatter,
   body: string,
+  options?: { plain?: boolean },
 ): Promise<void> {
+  if (options?.plain) {
+    await fs.writeFile(filePath, body.trimEnd() + "\n", "utf8");
+    return;
+  }
   const validated = FrontmatterSchema.parse(frontmatter);
   const content = matter.stringify(body.trim() + "\n", validated);
   await fs.writeFile(filePath, content, "utf8");

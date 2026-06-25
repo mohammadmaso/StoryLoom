@@ -10,11 +10,16 @@ export {
 
 export {
   loadProjectEnv,
+  loadProjectEnvPublic,
+  saveProjectEnv,
   validateAiSetup,
   ensureEnvTemplate,
   applyEnvToProcess,
   resolveMastraModel,
+  openAiCompatibleBaseUrl,
   type EnvConfig,
+  type EnvConfigPublic,
+  type EnvConfigUpdate,
 } from "./config/env.js";
 
 export {
@@ -55,7 +60,9 @@ export {
   getGraphContext,
   summarizeGraphForContext,
   buildCanonGraph,
+  resolveWikilinkLabel,
   type GraphBuildOptions,
+  type ResolvedWikilink,
 } from "./graph/builder.js";
 
 export { searchProject, type SearchOptions } from "./search/keyword.js";
@@ -85,6 +92,7 @@ export {
   runWhatIfAgent,
   runPlotHoleAgent,
   runChapterAgent,
+  runIntegrateSuggestionsAgent,
   type AgentServices,
 } from "./agents/index.js";
 
@@ -98,3 +106,19 @@ export {
   type WriteChapterOptions,
   type WriteChapterResult,
 } from "./generate/writer.js";
+
+export {
+  parseStorySuggestions,
+  plotFindingsToSuggestions,
+  parseWhatIfSuggestions,
+  contentToChapterSuggestion,
+  STORY_SUGGESTIONS_PROMPT,
+  type ParsedCopilotResponse,
+} from "./suggestions/parser.js";
+
+export {
+  applyStorySuggestions,
+  appendSuggestionContent,
+  type ApplySuggestionsOptions,
+  type ApplySuggestionsResult,
+} from "./suggestions/applier.js";

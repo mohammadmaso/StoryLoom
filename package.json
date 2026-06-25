@@ -10,12 +10,16 @@
     "story": "pnpm --filter @storyloom/cli start",
     "api:dev": "pnpm --filter @storyloom/desktop-api dev",
     "api:build": "pnpm --filter @storyloom/desktop-api build",
+    "api:sidecar": "node scripts/build-api-sidecar.mjs",
     "desktop:dev": "pnpm api:dev & pnpm --filter @storyloom/desktop tauri dev",
-    "desktop:build": "pnpm build && pnpm --filter @storyloom/desktop tauri build",
+    "desktop:build": "pnpm build && pnpm api:sidecar && pnpm --filter @storyloom/desktop tauri build",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r clean"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

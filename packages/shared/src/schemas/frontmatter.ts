@@ -22,4 +22,6 @@ export interface ParsedMarkdownFile {
   body: string;
   filePath: string;
   relativePath: string;
+  /** True when the file has no YAML frontmatter block (e.g. AI reports). */
+  plain?: boolean;
 }

@@ -1,11 +1,15 @@
 import { simpleGit, type SimpleGit } from "simple-git";
+import path from "node:path";
 import type { AiCommitInfo, StoryConfig } from "@storyloom/shared";
+import { STORYLOOM_DIR } from "@storyloom/shared";
 
 export class GitAutoCommitter {
   private git: SimpleGit;
   private config: StoryConfig;
+  private projectRoot: string;
 
   constructor(projectRoot: string, config: StoryConfig) {
+    this.projectRoot = projectRoot;
     this.git = simpleGit(projectRoot);
     this.config = config;
   }
@@ -27,7 +31,12 @@ export class GitAutoCommitter {
       return null;
     }
 
-    await this.git.add(files);
+    const trackable = await this.filterTrackableFiles(files);
+    if (trackable.length === 0) {
+      return null;
+    }
+
+    await this.git.add(trackable);
     const status = await this.git.status();
     if (status.staged.length === 0) {
       return null;
@@ -37,6 +46,31 @@ export class GitAutoCommitter {
     const fullMessage = `${prefix}: ${message}`;
     const result = await this.git.commit(fullMessage);
     return result.commit ?? null;
+  }
+
+  private async filterTrackableFiles(files: string[]): Promise<string[]> {
+    const relativeFiles = files
+      .map((file) => this.toRelativePath(file))
+      .filter((file) => file.length > 0 && !file.startsWith(".."));
+
+    if (relativeFiles.length === 0) return [];
+
+    try {
+      const ignored = await this.git.checkIgnore(relativeFiles);
+      const ignoredSet = new Set(ignored);
+      return relativeFiles.filter((file) => !ignoredSet.has(file));
+    } catch {
+      return relativeFiles.filter(
+        (file) => file !== STORYLOOM_DIR && !file.startsWith(`${STORYLOOM_DIR}/`),
+      );
+    }
+  }
+
+  private toRelativePath(file: string): string {
+    const relative = path.isAbsolute(file)
+      ? path.relative(this.projectRoot, file)
+      : file;
+    return relative.split(path.sep).join("/");
   }
 
   async logAiCommits(limit = 20): Promise<AiCommitInfo[]> {

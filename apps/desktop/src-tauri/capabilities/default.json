@@ -9,6 +9,7 @@
     "urls": [
       "http://localhost:1420",
       "http://127.0.0.1:1420",
+      "http://127.0.0.1:3847",
       "http://localhost:*"
     ]
   },
@@ -16,6 +17,16 @@
     "core:default",
     "dialog:default",
     "dialog:allow-open",
-    "shell:default"
+    "shell:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "args": true,
+          "name": "binaries/storyloom-api",
+          "sidecar": true
+        }
+      ]
+    }
   ]
 }

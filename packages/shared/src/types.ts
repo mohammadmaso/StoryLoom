@@ -21,6 +21,13 @@ export type {
   StyleProfile,
 } from "./schemas/graph.js";
 
+export type {
+  StorySuggestion,
+  StorySuggestionTarget,
+  SuggestionTargetFolder,
+  SuggestionApplyMode,
+} from "./schemas/suggestions.js";
+
 export interface SearchResult {
   filePath: string;
   relativePath: string;

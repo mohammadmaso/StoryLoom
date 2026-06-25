@@ -321,3 +321,31 @@ export async function buildCanonGraph(
     ),
   };
 }
+
+export interface ResolvedWikilink {
+  path: string | null;
+  ambiguous: string[];
+}
+
+export async function resolveWikilinkLabel(
+  projectRoot: string,
+  config: StoryConfig,
+  linkLabel: string,
+): Promise<ResolvedWikilink> {
+  const files = await loadAllMarkdownFiles(projectRoot, config);
+  const index = buildEntityIndex(files, projectRoot);
+  const targets = resolveLink(linkLabel, index);
+
+  if (targets.length === 0) {
+    return { path: null, ambiguous: [] };
+  }
+
+  if (targets.length > 1) {
+    return {
+      path: targets[0]!.relativePath,
+      ambiguous: targets.map((t) => t.relativePath),
+    };
+  }
+
+  return { path: targets[0]!.relativePath, ambiguous: [] };
+}

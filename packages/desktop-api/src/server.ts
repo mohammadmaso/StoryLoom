@@ -36,13 +36,21 @@ import {
   runPlotHoleAgent,
   runChapterAgent,
   writeChapterOutput,
+  parseStorySuggestions,
+  plotFindingsToSuggestions,
+  parseWhatIfSuggestions,
+  contentToChapterSuggestion,
+  applyStorySuggestions,
   GitAutoCommitter,
   validateAiSetup,
   loadProjectEnv,
+  loadProjectEnvPublic,
+  saveProjectEnv,
   walkMarkdownFiles,
   fileExists,
+  resolveWikilinkLabel,
 } from "@storyloom/core";
-import { ENTITY_FOLDERS, REPORTS_DIR } from "@storyloom/shared";
+import { ENTITY_FOLDERS, REPORTS_DIR, StorySuggestionsPayloadSchema, SuggestionApplyModeSchema } from "@storyloom/shared";
 import type { EntityFolder, WriteMode } from "@storyloom/shared";
 import {
   closeProject,
@@ -52,6 +60,15 @@ import {
   requireSession,
   setSessionConfig,
 } from "./session.js";
+
+async function chapterRelativePath(
+  projectRoot: string,
+  chapterRef: string,
+): Promise<string | undefined> {
+  const filePath = await findChapterFile(projectRoot, chapterRef);
+  if (!filePath) return undefined;
+  return path.relative(projectRoot, filePath).split(path.sep).join("/");
+}
 
 const app = new Hono();
 
@@ -78,7 +95,11 @@ app.get("/api/project", (c) => {
 app.post("/api/project/open", async (c) => {
   const { path: projectPath } = await c.req.json<{ path: string }>();
   const session = await openProject(projectPath);
-  return c.json({ projectRoot: session.projectRoot, config: session.config });
+  return c.json({
+    open: true,
+    projectRoot: session.projectRoot,
+    config: session.config,
+  });
 });
 
 app.post("/api/project/close", (c) => {
@@ -102,7 +123,11 @@ app.post("/api/project/init", async (c) => {
     initGit: body.initGit ?? true,
   });
   const session = await openProject(projectRoot);
-  return c.json({ projectRoot: session.projectRoot, config: session.config });
+  return c.json({
+    open: true,
+    projectRoot: session.projectRoot,
+    config: session.config,
+  });
 });
 
 app.get("/api/config", async (c) => {
@@ -125,6 +150,24 @@ app.post("/api/config/set", async (c) => {
   await saveConfig(session.configPath, updated);
   setSessionConfig(updated);
   return c.json(updated);
+});
+
+app.get("/api/env", async (c) => {
+  const session = requireSession();
+  return c.json(await loadProjectEnvPublic(session.projectRoot));
+});
+
+app.put("/api/env", async (c) => {
+  const session = requireSession();
+  const body = await c.req.json<{
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
+    openaiBaseUrl?: string;
+    anthropicBaseUrl?: string;
+    ollamaBaseUrl?: string;
+  }>();
+  await saveProjectEnv(session.projectRoot, body);
+  return c.json(await loadProjectEnvPublic(session.projectRoot));
 });
 
 app.get("/api/tree", async (c) => {
@@ -158,6 +201,41 @@ app.get("/api/file", async (c) => {
   return c.json(parsed);
 });
 
+app.get("/api/wikilink/resolve", async (c) => {
+  const session = requireSession();
+  const label = c.req.query("label");
+  if (!label?.trim()) return c.json({ error: "label required" }, 400);
+  const result = await resolveWikilinkLabel(
+    session.projectRoot,
+    session.config,
+    label.trim(),
+  );
+  return c.json(result);
+});
+
+app.delete("/api/file", async (c) => {
+  const session = requireSession();
+  const relativePath = c.req.query("path");
+  if (!relativePath) return c.json({ error: "path required" }, 400);
+
+  // Prevent path traversal
+  const filePath = path.resolve(path.join(session.projectRoot, relativePath));
+  if (!filePath.startsWith(path.resolve(session.projectRoot) + path.sep)) {
+    return c.json({ error: "INVALID_PATH" }, 400);
+  }
+
+  if (!relativePath.endsWith(".md")) {
+    return c.json({ error: "INVALID_PATH" }, 400);
+  }
+
+  if (!(await fileExists(filePath))) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  await fs.unlink(filePath);
+  return c.json({ ok: true });
+});
+
 app.put("/api/file", async (c) => {
   const session = requireSession();
   const body = await c.req.json<{
@@ -168,10 +246,17 @@ app.put("/api/file", async (c) => {
   const filePath = path.join(session.projectRoot, body.relativePath);
   if (body.frontmatter) {
     const existing = await parseMarkdownFile(filePath, session.projectRoot);
-    await writeMarkdownFile(filePath, { ...existing.frontmatter, ...body.frontmatter } as typeof existing.frontmatter, body.body);
+    await writeMarkdownFile(
+      filePath,
+      { ...existing.frontmatter, ...body.frontmatter } as typeof existing.frontmatter,
+      body.body,
+      { plain: existing.plain },
+    );
   } else {
     const existing = await parseMarkdownFile(filePath, session.projectRoot);
-    await writeMarkdownFile(filePath, existing.frontmatter, body.body);
+    await writeMarkdownFile(filePath, existing.frontmatter, body.body, {
+      plain: existing.plain,
+    });
   }
   return c.json({ ok: true });
 });
@@ -257,9 +342,20 @@ app.post("/api/style/analyze", async (c) => {
   const files = await loadAllMarkdownFiles(session.projectRoot, session.config);
   const profile = analyzeStyle(files);
   const outPath = await saveStyleProfile(session.projectRoot, profile);
-  const git = new GitAutoCommitter(session.projectRoot, session.config);
-  await git.commitAiChange("style analysis profile", [outPath]);
-  return c.json({ profile, outPath });
+  const suggestions = [
+    {
+      id: "style-profile",
+      title: "Writing style profile",
+      description: profile.summary,
+      content: profile.summary,
+      target: {
+        folder: "world" as const,
+        path: "world/writing-style.md",
+        section: "## Style Profile",
+      },
+    },
+  ];
+  return c.json({ profile, outPath, suggestions });
 });
 
 app.get("/api/style/profile", async (c) => {
@@ -270,7 +366,9 @@ app.get("/api/style/profile", async (c) => {
 
 app.post("/api/plot-holes/check", async (c) => {
   const session = requireSession();
-  const body = await c.req.json<{ includeAi?: boolean; includeDrafts?: boolean }>().catch(() => ({ includeAi: undefined, includeDrafts: undefined }));
+  const body = await c.req
+    .json<{ includeAi?: boolean; includeDrafts?: boolean; chapter?: string }>()
+    .catch(() => ({ includeAi: undefined, includeDrafts: undefined, chapter: undefined }));
   const files = await loadAllMarkdownFiles(session.projectRoot, session.config);
   const graph = await buildStoryGraph(session.projectRoot, session.config);
   let findings = scanStructuralPlotHoles(files, graph, {
@@ -279,19 +377,28 @@ app.post("/api/plot-holes/check", async (c) => {
 
   const env = await loadProjectEnv(session.projectRoot);
   const aiCheck = validateAiSetup(session.config, env);
+  let llmText = "";
   if (body.includeAi !== false && aiCheck.ok) {
     const services = await createAgentServices(session.projectRoot, session.config);
-    const llmText = await runPlotHoleAgent(
+    llmText = await runPlotHoleAgent(
       services,
       buildPlotHolePromptContext(files, graph),
     );
     findings = [...findings, ...parseLlmPlotHoleFindings(llmText)];
   }
 
+  const defaultChapterPath = body.chapter
+    ? await chapterRelativePath(session.projectRoot, body.chapter)
+    : undefined;
+  const suggestions = [
+    ...plotFindingsToSuggestions(findings, defaultChapterPath),
+    ...parseStorySuggestions(llmText).suggestions,
+  ];
+
   const reportPath = await savePlotHoleReport(session.projectRoot, findings);
   const git = new GitAutoCommitter(session.projectRoot, session.config);
   await git.commitAiChange("plot-hole report", [reportPath]);
-  return c.json({ findings, reportPath, hasCritical: hasCriticalFindings(findings) });
+  return c.json({ findings, suggestions, reportPath, hasCritical: hasCriticalFindings(findings) });
 });
 
 app.post("/api/ai/interview", async (c) => {
@@ -313,21 +420,27 @@ app.post("/api/ai/interview", async (c) => {
   const context = contextBundleToPrompt(bundle);
 
   if (body.batch) {
-    const text = await runBatchInterviewerAgent(services, context);
+    const raw = await runBatchInterviewerAgent(services, context);
+    const parsed = parseStorySuggestions(raw);
     const reportPath = path.join(session.projectRoot, REPORTS_DIR, "interview-questions.md");
     await fs.mkdir(path.dirname(reportPath), { recursive: true });
-    await fs.writeFile(reportPath, text, "utf8");
+    await fs.writeFile(reportPath, raw, "utf8");
     const git = new GitAutoCommitter(session.projectRoot, session.config);
     await git.commitAiChange("generated interview questions", [reportPath]);
-    return c.json({ text, reportPath });
+    return c.json({
+      text: parsed.narrative,
+      suggestions: parsed.suggestions,
+      reportPath,
+    });
   }
 
   const message =
     body.resumeAnswers ??
     body.message ??
     "Give me thoughtful questions about my story.";
-  const text = await runInterviewerAgent(services, context, message, body.history);
-  return c.json({ text });
+  const raw = await runInterviewerAgent(services, context, message, body.history);
+  const parsed = parseStorySuggestions(raw);
+  return c.json({ text: parsed.narrative, suggestions: parsed.suggestions });
 });
 
 app.post("/api/ai/what-if", async (c) => {
@@ -339,13 +452,25 @@ app.post("/api/ai/what-if", async (c) => {
 
   const services = await createAgentServices(session.projectRoot, session.config);
   const bundle = await buildContextBundle(session.projectRoot, session.config, chapter);
-  const text = await runWhatIfAgent(services, contextBundleToPrompt(bundle), chapter);
+  const raw = await runWhatIfAgent(services, contextBundleToPrompt(bundle), chapter);
+  const parsed = parseStorySuggestions(raw);
+  const chapterPath = await chapterRelativePath(session.projectRoot, chapter);
+  const suggestions =
+    parsed.suggestions.length > 0
+      ? parsed.suggestions
+      : chapterPath
+        ? parseWhatIfSuggestions(raw, chapterPath)
+        : [];
   const reportPath = path.join(session.projectRoot, REPORTS_DIR, `what-if-${chapter.replace(/[^\w-]/g, "-")}.md`);
   await fs.mkdir(path.dirname(reportPath), { recursive: true });
-  await fs.writeFile(reportPath, text, "utf8");
+  await fs.writeFile(reportPath, raw, "utf8");
   const git = new GitAutoCommitter(session.projectRoot, session.config);
   await git.commitAiChange(`what-if analysis for ${chapter}`, [reportPath]);
-  return c.json({ text, reportPath });
+  return c.json({
+    text: parsed.narrative,
+    suggestions,
+    reportPath,
+  });
 });
 
 app.post("/api/ai/generate", async (c) => {
@@ -355,6 +480,7 @@ app.post("/api/ai/generate", async (c) => {
     mode?: WriteMode | "draft";
     outline?: boolean;
     force?: boolean;
+    preview?: boolean;
   }>();
 
   const env = await loadProjectEnv(session.projectRoot);
@@ -384,6 +510,27 @@ app.post("/api/ai/generate", async (c) => {
     body.outline ? "outline" : "prose",
   );
 
+  const parsed = parseStorySuggestions(content);
+  const narrative = parsed.narrative || content;
+  const chapterPath = await chapterRelativePath(session.projectRoot, body.chapter);
+
+  if (body.preview) {
+    const suggestions =
+      parsed.suggestions.length > 0
+        ? parsed.suggestions
+        : chapterPath
+          ? [
+              contentToChapterSuggestion(
+                narrative,
+                chapterPath,
+                body.outline ? "Chapter outline" : "Generated chapter",
+                body.outline ? "## Outline" : undefined,
+              ),
+            ]
+          : [];
+    return c.json({ content: narrative, suggestions, preview: true });
+  }
+
   const mode: WriteMode =
     body.mode === "draft" || body.mode === "draft_file"
       ? "draft_file"
@@ -393,12 +540,60 @@ app.post("/api/ai/generate", async (c) => {
     projectRoot: session.projectRoot,
     config: session.config,
     chapterRef: body.chapter,
-    content,
+    content: narrative,
     mode,
     aiGenerated: true,
   });
 
-  return c.json({ content, ...result });
+  return c.json({ content: narrative, ...result });
+});
+
+app.post("/api/ai/apply-suggestions", async (c) => {
+  const session = requireSession();
+  const body = await c.req.json<{
+    suggestions: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      content: string;
+      target: {
+        folder: string;
+        path?: string;
+        section?: string;
+      };
+    }>;
+    chapterPath?: string;
+    mode?: "append" | "integrate";
+  }>();
+
+  if (!body.suggestions?.length) {
+    return c.json({ error: "NO_SUGGESTIONS" }, 400);
+  }
+
+  const suggestions = StorySuggestionsPayloadSchema.parse(body.suggestions);
+  const mode = SuggestionApplyModeSchema.parse(body.mode ?? "integrate");
+
+  if (mode === "integrate") {
+    const env = await loadProjectEnv(session.projectRoot);
+    const check = validateAiSetup(session.config, env);
+    if (!check.ok) return c.json({ error: check.reason }, 400);
+  }
+
+  const services =
+    mode === "integrate"
+      ? await createAgentServices(session.projectRoot, session.config)
+      : undefined;
+
+  const result = await applyStorySuggestions({
+    projectRoot: session.projectRoot,
+    config: session.config,
+    suggestions,
+    defaultChapterPath: body.chapterPath,
+    mode,
+    services,
+  });
+
+  return c.json(result);
 });
 
 app.get("/api/git/log-ai", async (c) => {
@@ -434,6 +629,12 @@ app.get("/api/reports/:name", async (c) => {
 app.onError((err, c) => {
   if (err.message === "NO_PROJECT_OPEN") {
     return c.json({ error: "NO_PROJECT_OPEN" }, 400);
+  }
+  if (err.message.startsWith("NOT_A_STORYLOOM_PROJECT:")) {
+    return c.json({ error: err.message }, 400);
+  }
+  if (err.message.startsWith("INVALID_CONFIG:")) {
+    return c.json({ error: err.message }, 400);
   }
   console.error(err);
   return c.json({ error: err.message ?? "Internal error" }, 500);

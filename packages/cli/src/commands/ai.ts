@@ -215,8 +215,6 @@ export function registerAiCommands(program: Command): void {
         );
         const profile = analyzeStyle(files);
         const outPath = await saveStyleProfile(project.projectRoot, profile);
-        const git = new GitAutoCommitter(project.projectRoot, project.config);
-        await git.commitAiChange("style analysis profile", [outPath]);
         console.log(profile.summary);
         console.log(`\nProfile saved: ${outPath}`);
       } catch (err) {

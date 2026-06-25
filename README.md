@@ -75,7 +75,13 @@ cd my-novel
 # Configure AI (required before AI commands)
 story config set ai.provider openai
 story config set ai.model gpt-4o
-# Add OPENAI_API_KEY=sk-... to .env
+
+# Secrets & custom endpoints go in project-root .env (or Desktop → Settings)
+# OPENAI_API_KEY=sk-...
+# OPENAI_BASE_URL=https://api.openai.com/v1   # optional; OpenAI-compatible proxy
+# ANTHROPIC_API_KEY=sk-ant-...
+# ANTHROPIC_BASE_URL=https://api.anthropic.com  # optional
+# OLLAMA_BASE_URL=http://localhost:11434        # when ai.provider is ollama
 
 # Scaffold content
 story add-character Sarah
@@ -124,6 +130,22 @@ my-novel/
 | `story analyze-style` | Author voice profiling |
 | `story generate <chapter> [--mode suggest\|draft\|direct]` | Chapter generation |
 | `story git log-ai` | View AI-prefixed commits |
+
+## AI Configuration
+
+**Provider & model** live in `story-config.yaml` (`story config set` or Desktop Settings).
+
+**API keys and base URLs** live in the project `.env` file (gitignored). In the desktop app, open **Settings** after opening a project to edit keys and endpoints without touching files manually. Leave key fields blank when saving to keep existing values.
+
+| Variable | Purpose |
+|----------|---------|
+| `OPENAI_API_KEY` | OpenAI or compatible provider key |
+| `OPENAI_BASE_URL` | Custom OpenAI-compatible endpoint (e.g. local proxy, Azure-style gateway) |
+| `ANTHROPIC_API_KEY` | Anthropic key |
+| `ANTHROPIC_BASE_URL` | Custom Anthropic API base URL |
+| `OLLAMA_BASE_URL` | Local Ollama server (default `http://localhost:11434`) |
+
+See `examples/sample-novel/.env.example` for a template.
 
 ## Write Modes
 

@@ -1,0 +1,25 @@
+story:
+  title: "من، گندم، حامد "
+  author: محمد مسعودی
+  genre: ریالیستیک
+  output_language: fa - Persian
+ai:
+  provider: openai
+  model: deepseek/deepseek-v4-flash
+  write_mode: direct
+git:
+  enabled: true
+  auto_commit: true
+  commit_prefix: AI
+memory:
+  wikilink_folders:
+    - characters
+    - locations
+    - items
+    - world
+    - chapters
+canon:
+  default_status: draft
+  warn_on_generate: true
+i18n:
+  cli_locale: en

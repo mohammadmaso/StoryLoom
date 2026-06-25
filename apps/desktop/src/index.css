@@ -1,14 +1,103 @@
 @import "tailwindcss";
 
+/* ─── Theme tokens ─────────────────────────────────────────────────────────── */
+
+:root {
+  /* Dark theme (default) */
+  --bg-base:           #0c0a09;        /* stone-950 */
+  --bg-surface:        #1c1917;        /* stone-900 */
+  --bg-muted:          #292524;        /* stone-800 */
+  --bg-subtle:         #44403c;        /* stone-700 */
+  --text-primary:      #f5f5f4;        /* stone-100 */
+  --text-secondary:    #a8a29e;        /* stone-400 */
+  --text-muted:        #78716c;        /* stone-500 */
+  --text-faint:        #57534e;        /* stone-600 */
+  --border:            #292524;        /* stone-800 */
+  --border-subtle:     #44403c;        /* stone-700 */
+  --accent:            #b45309;        /* amber-700 */
+  --accent-hover:      #d97706;        /* amber-600 */
+  --accent-text:       #fef3c7;        /* amber-100 */
+  --accent-text-dim:   #fde68a;        /* amber-200 */
+  --accent-bg-icon:    #92400e;        /* amber-800 */
+  --accent-nav-bg:     rgba(69,26,3,0.6);   /* amber-950/60 */
+  --accent-nav-text:   #fde68a;             /* amber-200 */
+  --accent-nav-ring:   rgba(120,53,15,0.5); /* amber-800/50 */
+  --accent-mode-bg:    rgba(69,26,3,0.5);   /* amber-950/50 */
+  --accent-mode-text:  #fef3c7;             /* amber-100 */
+  --accent-mode-ring:  rgba(120,53,15,0.4); /* amber-800/40 */
+  --scrollbar-thumb:   #44403c;
+  color-scheme: dark;
+}
+
+html.light {
+  --bg-base:           #fafaf9;        /* stone-50 */
+  --bg-surface:        #f5f5f4;        /* stone-100 */
+  --bg-muted:          #e7e5e4;        /* stone-200 */
+  --bg-subtle:         #d6d3d1;        /* stone-300 */
+  --text-primary:      #1c1917;        /* stone-900 */
+  --text-secondary:    #78716c;        /* stone-500 */
+  --text-muted:        #a8a29e;        /* stone-400 */
+  --text-faint:        #a8a29e;        /* stone-400 */
+  --border:            #e7e5e4;        /* stone-200 */
+  --border-subtle:     #d6d3d1;        /* stone-300 */
+  --accent:            #d97706;        /* amber-600 */
+  --accent-hover:      #f59e0b;        /* amber-500 */
+  --accent-text:       #451a03;        /* amber-950 */
+  --accent-text-dim:   #92400e;        /* amber-800 */
+  --accent-bg-icon:    #fde68a;        /* amber-200 */
+  --accent-nav-bg:     rgba(254,243,199,0.7);  /* amber-100/70 */
+  --accent-nav-text:   #78350f;               /* amber-900 */
+  --accent-nav-ring:   rgba(180,83,9,0.25);   /* amber-700/25 */
+  --accent-mode-bg:    rgba(254,243,199,0.6);  /* amber-100/60 */
+  --accent-mode-text:  #451a03;               /* amber-950 */
+  --accent-mode-ring:  rgba(180,83,9,0.2);    /* amber-700/20 */
+  --scrollbar-thumb:   #d6d3d1;
+  color-scheme: light;
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+
 @layer base {
   html, body, #root {
     height: 100%;
   }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+  }
+
+  html[dir="rtl"] {
+    font-family: "Vazir", "Segoe UI", Tahoma, sans-serif;
+  }
+
+  html[dir="rtl"] .font-mono,
+  html[dir="rtl"] pre,
+  html[dir="rtl"] code {
+    font-family: ui-monospace, "Cascadia Code", monospace;
+    direction: ltr;
+    unicode-bidi: embed;
+  }
+
+  select,
+  option {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+  }
+
+  select:focus option:checked {
+    background-color: var(--accent);
+    color: var(--accent-text);
+  }
 }
+
+/* ─── Components ────────────────────────────────────────────────────────────── */
 
 @layer components {
   .panel {
-    @apply rounded-xl border border-stone-800 bg-stone-900/80 backdrop-blur;
+    @apply rounded-xl backdrop-blur;
+    border: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--bg-surface) 80%, transparent);
   }
 
   .btn {
@@ -16,26 +105,395 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition bg-amber-700 text-white hover:bg-amber-600;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition;
+    background-color: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition border border-stone-700 bg-stone-800 text-stone-100 hover:bg-stone-700;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-muted);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--bg-subtle);
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition text-stone-300 hover:bg-stone-800 hover:text-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition;
+    color: var(--text-secondary);
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--bg-muted);
+    color: var(--text-primary);
   }
 
   .input {
-    @apply w-full rounded-lg border border-stone-700 bg-stone-950 px-3 py-2 text-sm text-stone-100 outline-none focus:border-amber-600;
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    color-scheme: inherit;
+  }
+
+  .input:focus {
+    border-color: var(--accent);
+  }
+
+  select.input {
+    @apply cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    padding-inline-end: 2.25rem;
+  }
+
+  [dir="rtl"] select.input {
+    background-position: left 0.65rem center;
+    padding-inline-end: 0.75rem;
+    padding-inline-start: 2.25rem;
   }
 
   .nav-link {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-stone-300 transition hover:bg-stone-800 hover:text-white;
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition;
+    color: var(--text-secondary);
+  }
+
+  .nav-link:hover {
+    background-color: var(--bg-muted);
+    color: var(--text-primary);
   }
 
   .nav-link-active {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm bg-amber-950/60 text-amber-200 ring-1 ring-amber-800/50;
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm;
+    background-color: var(--accent-nav-bg);
+    color: var(--accent-nav-text);
+    box-shadow: inset 0 0 0 1px var(--accent-nav-ring);
+  }
+
+  .copilot-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .copilot-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .copilot-scroll::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+
+  .mode-tab {
+    @apply flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm transition;
+  }
+
+  .mode-tab-active {
+    background-color: var(--accent-mode-bg);
+    color: var(--accent-mode-text);
+    box-shadow: inset 0 0 0 1px var(--accent-mode-ring);
+  }
+
+  .mode-tab-inactive {
+    color: var(--text-muted);
+  }
+
+  .mode-tab-inactive:hover {
+    background-color: color-mix(in srgb, var(--bg-muted) 60%, transparent);
+    color: var(--text-secondary);
+  }
+
+  .story-editor-rtl .monaco-editor .view-lines {
+    direction: rtl;
+    text-align: right;
+  }
+
+  .story-wysiwyg {
+    @apply leading-relaxed;
+    color: var(--text-primary);
+    font-size: 15px;
+  }
+
+  .story-wysiwyg:focus {
+    @apply outline-none;
+  }
+
+  .story-wysiwyg h1 {
+    @apply mb-4 mt-2 text-2xl font-bold;
+    color: var(--accent-text-dim);
+  }
+
+  .story-wysiwyg h2 {
+    @apply mb-3 mt-4 text-xl font-semibold;
+    color: color-mix(in srgb, var(--accent-text-dim) 90%, transparent);
+  }
+
+  .story-wysiwyg h3 {
+    @apply mb-2 mt-3 text-lg font-semibold;
+    color: var(--text-primary);
+  }
+
+  .story-wysiwyg p {
+    @apply mb-3;
+  }
+
+  .story-wysiwyg ul,
+  .story-wysiwyg ol {
+    @apply mb-3 ms-6;
+  }
+
+  .story-wysiwyg li {
+    @apply mb-1;
+  }
+
+  .story-wysiwyg blockquote {
+    @apply my-3 border-s-4 ps-4 italic;
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    color: var(--text-secondary);
+  }
+
+  .story-wysiwyg a,
+  .story-wysiwyg .story-wikilink {
+    @apply cursor-pointer underline underline-offset-2 transition;
+    color: var(--accent-text-dim);
+    text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  .story-wysiwyg a:hover,
+  .story-wysiwyg .story-wikilink:hover {
+    color: var(--accent-hover);
+  }
+
+  .story-wysiwyg .story-wikilink:focus-visible {
+    @apply rounded outline outline-2 outline-offset-2;
+    outline-color: var(--accent);
+  }
+
+  .story-wysiwyg code {
+    @apply rounded px-1.5 py-0.5 font-mono text-sm;
+    background-color: var(--bg-muted);
+    color: var(--accent-text-dim);
+  }
+
+  .story-wysiwyg pre {
+    @apply my-3 overflow-x-auto rounded-lg p-4 font-mono text-sm;
+    background-color: var(--bg-base);
+    direction: ltr;
+    text-align: left;
+  }
+
+  .story-wysiwyg-rtl {
+    font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  }
+
+  [dir="rtl"] .story-wysiwyg blockquote {
+    @apply border-s-0 border-e-4 pe-4 ps-0;
+  }
+
+  .copilot-markdown h1,
+  .copilot-markdown h2,
+  .copilot-markdown h3 {
+    @apply mb-2 mt-3 font-semibold;
+    color: var(--text-primary);
+  }
+
+  .copilot-markdown h1 {
+    @apply text-lg;
+  }
+
+  .copilot-markdown h2 {
+    @apply text-base;
+  }
+
+  .copilot-markdown h3 {
+    @apply text-sm;
+  }
+
+  .copilot-markdown p {
+    @apply mb-2 last:mb-0;
+  }
+
+  .copilot-markdown ul,
+  .copilot-markdown ol {
+    @apply mb-2 ms-5 list-outside;
+  }
+
+  .copilot-markdown ul {
+    @apply list-disc;
+  }
+
+  .copilot-markdown ol {
+    @apply list-decimal;
+  }
+
+  .copilot-markdown li {
+    @apply mb-1;
+  }
+
+  .copilot-markdown blockquote {
+    @apply my-2 border-s-4 ps-3 italic;
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    color: var(--text-secondary);
+  }
+
+  .copilot-markdown .story-wikilink {
+    @apply cursor-default underline underline-offset-2;
+    color: var(--accent-text-dim);
+    text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  .copilot-markdown code {
+    @apply rounded px-1 py-0.5 font-mono text-xs;
+    background-color: var(--bg-muted);
+    color: var(--accent-text-dim);
+  }
+
+  .copilot-markdown pre {
+    @apply my-2 overflow-x-auto rounded-lg p-3 font-mono text-xs;
+    background-color: var(--bg-base);
+    direction: ltr;
+    text-align: left;
+  }
+
+  [dir="rtl"] .copilot-markdown blockquote {
+    @apply border-s-0 border-e-4 pe-3 ps-0;
   }
 }
+
+/* ─── Light-mode overrides for hardcoded dark utility classes ───────────────
+   These rules win over @layer utilities because un-layered rules always beat
+   layered ones regardless of selector specificity.
+─────────────────────────────────────────────────────────────────────────── */
+
+/* Text — amber shades (too light on white bg) */
+html.light .text-amber-50   { color: #1c1917; }
+html.light .text-amber-100  { color: #451a03; }
+html.light .text-amber-200  { color: #78350f; }
+html.light .text-amber-300  { color: #92400e; }
+html.light .text-amber-400  { color: #b45309; }
+html.light .text-amber-500  { color: #d97706; }
+html.light .text-amber-200\/90 { color: #78350f; }
+html.light .text-amber-300\/80 { color: #92400e; }
+
+/* Text — stone shades (too light on white bg) */
+html.light .text-stone-100  { color: #1c1917; }
+html.light .text-stone-200  { color: #292524; }
+html.light .text-stone-300  { color: #44403c; }
+html.light .text-stone-400  { color: #57534e; }
+html.light .text-stone-500  { color: #78716c; }
+html.light .text-stone-600  { color: #78716c; }
+
+/* Text — semantic (keep readable) */
+html.light .text-emerald-200 { color: #065f46; }
+html.light .text-red-200     { color: #991b1b; }
+html.light .text-red-300     { color: #b91c1c; }
+
+/* Borders */
+html.light .border-stone-700    { border-color: #d6d3d1; }
+html.light .border-stone-700\/80 { border-color: rgba(214,211,208,0.9); }
+html.light .border-stone-700\/90 { border-color: rgba(214,211,208,0.95); }
+html.light .border-stone-800    { border-color: #e7e5e4; }
+html.light .border-stone-800\/80 { border-color: rgba(231,229,228,0.9); }
+html.light .border-amber-800\/50 { border-color: rgba(180,83,9,0.25); }
+html.light .border-dashed.border-stone-700 { border-color: #d6d3d1; }
+
+/* Backgrounds — stone (solid) */
+html.light .bg-stone-700  { background-color: #d6d3d1; }
+html.light .bg-stone-800  { background-color: #e7e5e4; }
+html.light .bg-stone-900  { background-color: #f5f5f4; }
+html.light .bg-stone-950  { background-color: #fafaf9; }
+
+/* Backgrounds — stone (with opacity) */
+html.light .bg-stone-800\/80  { background-color: rgba(231,229,228,0.85); }
+html.light .bg-stone-900\/40  { background-color: rgba(245,245,244,0.6); }
+html.light .bg-stone-900\/50  { background-color: rgba(245,245,244,0.7); }
+html.light .bg-stone-900\/80  { background-color: rgba(245,245,244,0.88); }
+html.light .bg-stone-900\/90  { background-color: rgba(245,245,244,0.95); }
+html.light .bg-stone-950\/40  { background-color: rgba(250,250,249,0.6); }
+html.light .bg-stone-950\/50  { background-color: rgba(250,250,249,0.7); }
+html.light .bg-stone-950\/70  { background-color: rgba(250,250,249,0.8); }
+
+/* Backgrounds — amber (too dark for light mode) */
+html.light .bg-amber-900\/30  { background-color: rgba(254,243,199,0.5); }
+html.light .bg-amber-900\/40  { background-color: rgba(254,243,199,0.65); }
+html.light .bg-amber-950\/30  { background-color: rgba(254,243,199,0.5); }
+html.light .bg-amber-950\/40  { background-color: rgba(254,243,199,0.55); }
+html.light .bg-amber-950\/50  { background-color: rgba(254,243,199,0.75); }
+html.light .bg-amber-950\/60  { background-color: rgba(254,243,199,0.8); }
+
+/* Backgrounds — semantic states (desaturate for light) */
+html.light .bg-emerald-900\/60 { background-color: rgba(209,250,229,0.8); }
+html.light .bg-red-950\/20     { background-color: rgba(254,242,242,0.8); }
+html.light .bg-red-950\/30     { background-color: rgba(254,242,242,0.9); }
+html.light .bg-red-950\/40     { background-color: rgba(254,242,242,0.95); }
+html.light .bg-red-950\/60     { background-color: rgba(252,165,165,0.3); }
+
+/* Hover backgrounds */
+html.light .hover\:bg-stone-600:hover { background-color: #a8a29e; }
+html.light .hover\:bg-stone-700:hover { background-color: #d6d3d1; }
+html.light .hover\:bg-stone-800:hover { background-color: #e7e5e4; }
+html.light .hover\:bg-emerald-800\/70:hover { background-color: rgba(167,243,208,0.6); }
+html.light .hover\:bg-red-900\/70:hover     { background-color: rgba(254,202,202,0.6); }
+
+/* Ring colors */
+html.light .ring-amber-800\/30 { --tw-ring-color: rgba(180,83,9,0.2); }
+
+/* Modal gradient overlay */
+html.light .from-amber-950\/40 { --tw-gradient-from: rgba(254,243,199,0.4); }
+
+/* User chat bubble — fully invert amber bubble for light mode */
+html.light .border-amber-800\/50.bg-amber-950\/50 {
+  background-color: rgba(254,243,199,0.75);
+  border-color: rgba(180,83,9,0.2);
+  color: #451a03;
+}
+html.light .bg-amber-950\/50.text-amber-50 { color: #451a03; }
+
+/* Modal background */
+html.light .bg-stone-900.border-stone-700\/90,
+html.light .border-stone-700\/90.bg-stone-900 {
+  background-color: #ffffff;
+  border-color: rgba(214,211,208,0.9);
+}
+
+/* Backgrounds — emerald semantic */
+html.light .bg-emerald-950\/10  { background-color: rgba(236,253,245,0.7); }
+html.light .bg-emerald-950\/20  { background-color: rgba(236,253,245,0.8); }
+html.light .bg-emerald-950\/30  { background-color: rgba(209,250,229,0.5); }
+html.light .bg-emerald-950\/40  { background-color: rgba(209,250,229,0.6); }
+html.light .bg-emerald-900\/50  { background-color: rgba(167,243,208,0.5); }
+html.light .bg-stone-950\/60    { background-color: rgba(250,250,249,0.85); }
+
+/* Borders — emerald semantic */
+html.light .border-emerald-900\/40 { border-color: rgba(52,211,153,0.3); }
+html.light .border-emerald-800\/30 { border-color: rgba(52,211,153,0.2); }
+html.light .border-emerald-700\/50 { border-color: rgba(16,185,129,0.3); }
+
+/* Borders — stone with opacity */
+html.light .border-stone-600     { border-color: #d6d3d1; }
+html.light .border-stone-700\/60  { border-color: rgba(214,211,208,0.7); }
+html.light .border-stone-800\/80  { border-color: rgba(231,229,228,0.9); }
+
+/* Hover text */
+html.light .hover\:text-stone-200:hover { color: #1c1917; }
+html.light .hover\:text-red-400:hover   { color: #b91c1c; }
+html.light .hover\:border-stone-600:hover { border-color: #a8a29e; }
+
+/* Amber text with opacity */
+html.light .text-amber-200\/90  { color: #78350f; }
+html.light .text-amber-700\/80  { color: #b45309; }
+
+/* Active ApplyModeButton */
+html.light .bg-amber-900\/50  { background-color: rgba(254,243,199,0.7); }
+html.light .ring-amber-800\/50 { --tw-ring-color: rgba(180,83,9,0.25); }
+
+/* Graph page bg-amber-800/80 user avatar stays dark (accent circle) */
+/* ReactFlow background dot color — leave as-is (it's a canvas prop) */

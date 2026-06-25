@@ -2,10 +2,10 @@ story:
   title: test
   author: test
   genre: test
-  output_language: en
+  output_language: fa
 ai:
-  provider: null
-  model: null
+  provider: openai
+  model: deepseek/deepseek-v4-flash
   write_mode: suggest
 git:
   enabled: true
