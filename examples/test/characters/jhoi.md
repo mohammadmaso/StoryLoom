@@ -1,6 +1,6 @@
 ---
 id: jhoi
-status: draft
+status: canon
 type: character
 created: '2026-06-25'
 updated: '2026-06-25'
@@ -58,3 +58,18 @@ aliases: []
 
 ## Story Appearances
 - فصل ۱: جویی
+
+# Jhoi
+
+## Basic Info
+- **Age:** 15
+- **Appearance:** (to be filled)
+- **Relation to father:** Tension over the stone, but still listens (for now).
+- **Mother:** (unknown)
+
+## Background
+Found a smooth stone that warms up when the dust cloud appears.
+
+## Notes
+- Father had a similar stone 25 years ago; he threw it away after strange footprints and disappearances.
+- Jhoi is curious and defiant, willing to challenge his father's fear.
